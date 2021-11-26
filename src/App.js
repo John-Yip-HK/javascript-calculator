@@ -5,7 +5,7 @@ import "./App.scss";
 
 function App() {
   return (
-    <Container id="outer-container">
+    <Container id="outer-container" className="align-items-center">
       <Main />
     </Container>
   );
