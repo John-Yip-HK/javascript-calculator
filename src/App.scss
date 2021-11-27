@@ -21,6 +21,10 @@
   width: map-get($grid-breakpoints, $breakpoint) * $factor;
 }
 
+@mixin addSemiTransparentLayer($opacity: 0.1) {
+  box-shadow: inset 0 0 0 100vmax rgba($white, $opacity);
+}
+
 body {
   font-family: "Roboto Mono", monospace;
   font-size: 24px;
@@ -34,7 +38,7 @@ body {
 
 #calculator-body {
   @include setCalculatorWidth();
-  @include testBorder();
+  @include testBorder(1rem);
 
   color: $white;
   border-width: 2px;
@@ -51,8 +55,9 @@ body {
   }
 
   #display-container {
-    @include testPadding($x-padding: 0.1rem);
+    @include testPadding(0.1rem, 0.1rem);
     font-family: "Calculator", monospace;
+    font-size: 28px;
     text-align: right;
 
     hr {
@@ -79,13 +84,11 @@ body {
 
         &.clickable {
           &:hover {
-            border-color: $yellow-300;
-            color: $yellow-300;
+            @include addSemiTransparentLayer();
           }
 
           &:active {
-            border-color: $cyan-300;
-            color: $cyan-300;
+            @include addSemiTransparentLayer(0.3);
           }
         }
       }
