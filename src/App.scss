@@ -4,8 +4,9 @@
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
 
-@mixin testBorder() {
+@mixin testBorder($border-radius: 0.5rem) {
   border: 1px solid white;
+  border-radius: $border-radius;
 }
 
 @mixin testMargin($y-margin: 1rem, $x-margin: 1rem) {
@@ -33,15 +34,26 @@ body {
 
 #calculator-body {
   @include setCalculatorWidth();
+  @include testBorder();
 
   color: $white;
-  border: 2px solid $gray-700;
+  border-width: 2px;
+  border-color: $gray-700;
   background-color: $black;
 
+  .row-container {
+    @include testMargin(1.5rem, 0);
+  }
+
+  #display-container,
+  #keypad div[class*="col"] {
+    @include testBorder(0.3rem);
+  }
+
   #display-container {
-    @include testBorder();
-    @include testPadding($x-padding: 0);
+    @include testPadding($x-padding: 0.1rem);
     font-family: "Calculator", monospace;
+    text-align: right;
 
     hr {
       @include testMargin(0, 0);
@@ -51,25 +63,56 @@ body {
   #keypad {
     width: 100%;
 
-    div[class*="col"] {
-      @include testBorder();
-      background-color: $gray-800;
-    }
+    div {
+      [class*="col"] {
+        @include testMargin(0.1rem, 0.1rem);
+        background-color: $gray-800;
+        text-align: center;
 
-    .no-border {
-      border: 0 !important;
-    }
+        &:first-of-type {
+          margin-left: 0;
+        }
 
-    .operand {
-      background-color: $gray-600 !important;
-    }
+        &:last-of-type {
+          margin-right: 0;
+        }
 
-    #clear {
-      background-color: $red-500;
-    }
+        &.clickable {
+          &:hover {
+            border-color: $yellow-300;
+            color: $yellow-300;
+          }
 
-    #equals {
-      background-color: $blue-700;
+          &:active {
+            border-color: $cyan-300;
+            color: $cyan-300;
+          }
+        }
+      }
+
+      .no-border {
+        border: 0;
+      }
+
+      .nested-row {
+        @include testMargin(0, 0.1rem);
+        background-color: transparent;
+      }
+
+      .operand {
+        background-color: $gray-600;
+      }
+
+      #clear {
+        background-color: $red-500;
+      }
+
+      #equals {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $blue-700;
+      }
     }
   }
 }
