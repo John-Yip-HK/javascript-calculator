@@ -27,7 +27,7 @@
 
 body {
   font-family: "Roboto Mono", monospace;
-  font-size: 24px;
+  font-size: 28px;
 }
 
 #outer-container {
@@ -37,7 +37,7 @@ body {
 }
 
 #calculator-body {
-  @include setCalculatorWidth();
+  @include setCalculatorWidth($factor: 0.5);
   @include testBorder(1rem);
 
   color: $white;
@@ -55,10 +55,17 @@ body {
   }
 
   #display-container {
-    @include testPadding(0.1rem, 0.1rem);
     font-family: "Calculator", monospace;
-    font-size: 28px;
+    font-size: 36px;
     text-align: right;
+
+    #display {
+      word-break: break-all;
+    }
+
+    span {
+      display: inline-block;
+    }
 
     hr {
       @include testMargin(0, 0);
@@ -69,6 +76,18 @@ body {
     width: 100%;
 
     div {
+      /* Credit: https://stackoverflow.com/questions/7018324/how-to-stop-highlighting-of-a-div-element-when-double-clicking */
+      /* If you want to implement it in very old browser-versions */
+      -webkit-user-select: none; /* Chrome/Safari */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE10+ */
+
+      /* The rule below is not implemented in browsers yet */
+      -o-user-select: none;
+
+      /* The rule below is implemented in most browsers by now */
+      user-select: none;
+
       [class*="col"] {
         @include testMargin(0.1rem, 0.1rem);
         background-color: $gray-800;

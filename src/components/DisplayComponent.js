@@ -4,9 +4,13 @@ import Col from "react-bootstrap/Col";
 export default function Display() {
   return (
     <Row className="row-container" id="display-container">
-      <Col id="display">&nbsp;</Col>
+      <Col id="display">
+        <span id="display-text">&nbsp;</span>
+      </Col>
       <hr />
-      <Col id="operand-and-operator-display">0</Col>
+      <Col id="op-display">
+        <span id="op-display-text">0</span>
+      </Col>
     </Row>
   );
 }
