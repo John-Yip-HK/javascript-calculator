@@ -36,6 +36,7 @@ class Main extends Component {
     this.detectKeyStrokeAndUpdateDisplay =
       this.detectKeyStrokeAndUpdateDisplay.bind(this);
     this.resetKeypad = this.resetKeypad.bind(this);
+    this.findElementId = this.findElementId.bind(this);
   }
 
   componentDidMount() {
@@ -51,47 +52,52 @@ class Main extends Component {
     document.removeEventListener("keyup", this.resetKeypad);
   }
 
+  findElementId(key) {
+    return (
+      this.state.keyToClickableId[key] ||
+      this.state.keyToClickableId[+key] ||
+      null
+    );
+  }
+
   detectKeyStrokeAndUpdateDisplay(event) {
-    if (
-      event.key in this.state.keyToClickableId ||
-      +event.key in this.state.keyToClickableId
-    ) {
-      this.updateDisplay(event.key);
-      document
-        .getElementById(
-          this.state.keyToClickableId[event.key] ||
-            this.state.keyToClickableId[+event.key]
-        )
-        .classList.add("keyActive");
+    const key = event.key;
+    const elementId = this.findElementId(key);
+
+    if (elementId) {
+      this.updateDisplay(key);
+      document.getElementById(elementId).classList.add("keyActive");
     }
-    if (event.key !== "F12") event.preventDefault();
+    if (key === "/") event.preventDefault();
   }
 
   resetKeypad(event) {
-    if (
-      event.key in this.state.keyToClickableId ||
-      +event.key in this.state.keyToClickableId
-    ) {
-      document
-        .getElementById(
-          this.state.keyToClickableId[event.key] ||
-            this.state.keyToClickableId[+event.key]
-        )
-        .classList.remove("keyActive");
+    const elementId = this.findElementId(event.key);
+
+    if (elementId) {
+      document.getElementById(elementId).classList.remove("keyActive");
     }
   }
 
   updateDisplay(key) {
     const clearTimeoutObj = () => {
+      if (!this.state.timeoutObj) return;
+
       clearTimeout(this.state.timeoutObj);
       this.setState({
         timeoutObj: null,
       });
     };
+
     const displaySpan = document.querySelector("#display > span");
     const opDisplay = document.querySelector("#op-display");
     const opDisplayStyles = getComputedStyle(opDisplay);
     const opDisplaySpan = opDisplay.firstElementChild;
+    /*
+    Check whether length of string stored shown in opDisplaySpan exceeds the length of 
+    out opDisplay div container minus an offset to prevent numbers in opDisplay span from 
+    being pushed to the right.
+    */
     const isExceed =
       opDisplaySpan.clientWidth >=
       opDisplay.clientWidth -
@@ -117,36 +123,107 @@ class Main extends Component {
           }, 1000),
         });
       } else {
-        displaySpan.innerHTML = [
-          "&nbsp;",
-          "0",
-          ...this.state.operators,
-        ].includes(displaySpan.innerHTML)
-          ? key
-          : displaySpan.innerHTML + key;
+        if (key === ".") {
+          displaySpan.innerHTML =
+            displaySpan.innerHTML === "&nbsp;"
+              ? `0${key}`
+              : displaySpan.innerHTML +
+                (this.state.operators.includes(displaySpan.innerHTML)
+                  ? "0"
+                  : "") +
+                key;
 
-        opDisplaySpan.innerHTML = ["", "0", ...this.state.operators].includes(
-          opDisplaySpan.innerHTML
-        )
-          ? key
-          : opDisplaySpan.innerHTML + key;
+          opDisplaySpan.innerHTML =
+            opDisplaySpan.innerHTML === "0"
+              ? `0${key}`
+              : opDisplaySpan.innerHTML +
+                (this.state.operators.includes(opDisplaySpan.innerHTML)
+                  ? "0"
+                  : "") +
+                key;
+        } else {
+          displaySpan.innerHTML = ["&nbsp;", "0"].includes(
+            displaySpan.innerHTML
+          )
+            ? key
+            : displaySpan.innerHTML + key;
+
+          opDisplaySpan.innerHTML = ["", "0"].includes(opDisplaySpan.innerHTML)
+            ? key
+            : opDisplaySpan.innerHTML + key;
+        }
       }
     } else {
       clearTimeoutObj();
-      if (key === "AC" || key === "Escape") {
-        displaySpan.innerHTML = "&nbsp;";
-        opDisplaySpan.innerHTML = 0;
-      } else if (this.state.operators.includes(key)) {
-        if (
-          this.state.operators.includes(
-            displaySpan.innerHTML.charAt(displaySpan.innerHTML.length - 1)
-          )
-        ) {
-          displaySpan.innerHTML = displaySpan.innerHTML.slice(0, -1) + key;
+
+      if (this.state.operators.includes(key)) {
+        if (displaySpan.innerHTML === "&nbsp;") {
+          displaySpan.innerHTML = key;
+          opDisplaySpan.innerHTML = key;
+          return;
+        }
+
+        const lastChar = displaySpan.innerHTML.charAt(
+          displaySpan.innerHTML.length - 1
+        );
+        const secondLastChar = displaySpan.innerHTML.charAt(
+          displaySpan.innerHTML.length - 2
+        );
+
+        if (this.state.operators.includes(lastChar)) {
+          if (key !== "-") {
+            displaySpan.innerHTML = displaySpan.innerHTML.slice(0, -1) + key;
+          } else {
+            if (
+              lastChar === "-" &&
+              this.state.operators.includes(secondLastChar)
+            )
+              return;
+            displaySpan.innerHTML += key;
+          }
         } else {
           displaySpan.innerHTML += key;
         }
+
         opDisplaySpan.innerHTML = key;
+      } else if (key === "=" || key === "Enter") {
+        /*
+        Calculate the result according to immediate execution logic.
+        For example:
+        3 + 5 x 6 - 2 / 4 
+        = 8 x 6 - 2 / 4
+        = 48 - 2 / 4
+        = 46 / 4
+        = 11.5
+
+        1+2-3*4/5+-6-7.0 = 1 + 2 - 3 * 4 / 5 + (-6) - 7.0
+        */
+        const regex = /(?<=[0-9.]+)[\+\-\*\/]/gi;
+        const operators = displaySpan.innerHTML.match(regex);
+        const operands = displaySpan.innerHTML
+          .replace(regex, ",")
+          .split(",")
+          .map((element) => (element = +element));
+
+        let value =
+          operators === null
+            ? +operands[0]
+            : operators.reduce((sum, operand, id) => {
+                switch (operand) {
+                  case "+":
+                    return (sum += operands[id + 1]);
+                  case "-":
+                    return (sum -= operands[id + 1]);
+                  case "*":
+                    return (sum *= operands[id + 1]);
+                  case "/":
+                    return (sum /= operands[id + 1]);
+                }
+              }, operands[0]);
+        console.log(value);
+      } else {
+        displaySpan.innerHTML = "&nbsp;";
+        opDisplaySpan.innerHTML = 0;
       }
     }
   }
