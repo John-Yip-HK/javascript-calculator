@@ -11,14 +11,36 @@ class Main extends Component {
       opDisplayOffset: 20,
       displayLimitMsg: "DIGIT LIMIT MET",
       operators: ["+", "-", "*", "/"],
+      keyToClickableId: {
+        1: "one",
+        2: "two",
+        3: "three",
+        4: "four",
+        5: "five",
+        6: "six",
+        7: "seven",
+        8: "eight",
+        9: "nine",
+        0: "zero",
+        ".": "decimal",
+        Escape: "clear",
+        "/": "divide",
+        "*": "multiply",
+        "+": "add",
+        "-": "subtract",
+        "=": "equals",
+        Enter: "equals",
+      },
     };
     this.updateDisplay = this.updateDisplay.bind(this);
     this.detectKeyStrokeAndUpdateDisplay =
       this.detectKeyStrokeAndUpdateDisplay.bind(this);
+    this.resetKeypad = this.resetKeypad.bind(this);
   }
 
   componentDidMount() {
     document.addEventListener("keydown", this.detectKeyStrokeAndUpdateDisplay);
+    document.addEventListener("keyup", this.resetKeypad);
   }
 
   componentWillUnmount() {
@@ -26,10 +48,37 @@ class Main extends Component {
       "keydown",
       this.detectKeyStrokeAndUpdateDisplay
     );
+    document.removeEventListener("keyup", this.resetKeypad);
   }
 
   detectKeyStrokeAndUpdateDisplay(event) {
-    console.log(event.key);
+    if (
+      event.key in this.state.keyToClickableId ||
+      +event.key in this.state.keyToClickableId
+    ) {
+      this.updateDisplay(event.key);
+      document
+        .getElementById(
+          this.state.keyToClickableId[event.key] ||
+            this.state.keyToClickableId[+event.key]
+        )
+        .classList.add("keyActive");
+    }
+    if (event.key !== "F12") event.preventDefault();
+  }
+
+  resetKeypad(event) {
+    if (
+      event.key in this.state.keyToClickableId ||
+      +event.key in this.state.keyToClickableId
+    ) {
+      document
+        .getElementById(
+          this.state.keyToClickableId[event.key] ||
+            this.state.keyToClickableId[+event.key]
+        )
+        .classList.remove("keyActive");
+    }
   }
 
   updateDisplay(key) {
@@ -83,13 +132,20 @@ class Main extends Component {
           : opDisplaySpan.innerHTML + key;
       }
     } else {
-      if (key === "AC") {
-        clearTimeoutObj();
+      clearTimeoutObj();
+      if (key === "AC" || key === "Escape") {
         displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = 0;
       } else if (this.state.operators.includes(key)) {
-        clearTimeoutObj();
-        displaySpan.innerHTML += key;
+        if (
+          this.state.operators.includes(
+            displaySpan.innerHTML.charAt(displaySpan.innerHTML.length - 1)
+          )
+        ) {
+          displaySpan.innerHTML = displaySpan.innerHTML.slice(0, -1) + key;
+        } else {
+          displaySpan.innerHTML += key;
+        }
         opDisplaySpan.innerHTML = key;
       }
     }

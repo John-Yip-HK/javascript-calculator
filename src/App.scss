@@ -21,8 +21,8 @@
   width: map-get($grid-breakpoints, $breakpoint) * $factor;
 }
 
-@mixin addSemiTransparentLayer($opacity: 0.1) {
-  box-shadow: inset 0 0 0 100vmax rgba($white, $opacity);
+@mixin addSemiTransparentLayer($color: $white, $opacity: 0.1) {
+  box-shadow: inset 0 0 0 100vmax rgba($color, $opacity);
 }
 
 body {
@@ -34,6 +34,7 @@ body {
   display: flex;
   height: 100vh;
   background-color: $blue-200;
+  max-width: 100%;
 }
 
 #calculator-body {
@@ -42,8 +43,8 @@ body {
 
   color: $white;
   border-width: 2px;
-  border-color: $gray-700;
-  background-color: $black;
+  border-color: $gray-500;
+  background-color: $gray-600;
 
   .row-container {
     @include testMargin(1.5rem, 0);
@@ -58,6 +59,7 @@ body {
     font-family: "Calculator", monospace;
     font-size: 36px;
     text-align: right;
+    background-color: $black;
 
     #display {
       word-break: break-all;
@@ -104,10 +106,19 @@ body {
         &.clickable {
           &:hover {
             @include addSemiTransparentLayer();
+
+            &.operand {
+              @include addSemiTransparentLayer($color: $black);
+            }
           }
 
-          &:active {
-            @include addSemiTransparentLayer(0.3);
+          &:active,
+          &.keyActive {
+            @include addSemiTransparentLayer($opacity: 0.3);
+
+            &.operand {
+              @include addSemiTransparentLayer($black, 0.3);
+            }
           }
         }
       }
@@ -122,7 +133,8 @@ body {
       }
 
       .operand {
-        background-color: $gray-600;
+        background-color: $gray-300;
+        color: $black;
       }
 
       #clear {
