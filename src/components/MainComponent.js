@@ -8,7 +8,7 @@ class Main extends Component {
     super(props);
     this.state = {
       timeoutObj: null,
-      opDisplayOffset: 20,
+      containerOffset: 20,
       displayLimitMsg: "DIGIT LIMIT MET",
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
@@ -80,6 +80,11 @@ class Main extends Component {
   }
 
   updateDisplay(key) {
+    // Helper methods.
+    /**
+     * Clear the timeout object stored in the component state.
+     * @returns nothing.
+     */
     const clearTimeoutObj = () => {
       if (!this.state.timeoutObj) return;
 
@@ -88,22 +93,26 @@ class Main extends Component {
         timeoutObj: null,
       });
     };
+    /**
+     * Check whether the length of element stored with strings exceeds the length of outer element container minus an offset to prevent numbers in element span from being pushed to the right.
+     * @param {HTMLElement} element
+     * @returns A boolean of whether the element width exceeds the difference between container width and offset.
+     */
+    const isExceed = (element) => {
+      const parent = element.parentElement;
+      const elementComputedStyles = getComputedStyle(parent);
+      return (
+        element.clientWidth >=
+        parent.clientWidth -
+          parseFloat(elementComputedStyles.paddingLeft) -
+          parseFloat(elementComputedStyles.paddingRight) -
+          this.state.containerOffset
+      );
+    };
 
     const displaySpan = document.querySelector("#display > span");
     const opDisplay = document.querySelector("#op-display");
-    const opDisplayStyles = getComputedStyle(opDisplay);
     const opDisplaySpan = opDisplay.firstElementChild;
-    /*
-    Check whether length of string stored shown in opDisplaySpan exceeds the length of 
-    out opDisplay div container minus an offset to prevent numbers in opDisplay span from 
-    being pushed to the right.
-    */
-    const isExceed =
-      opDisplaySpan.clientWidth >=
-      opDisplay.clientWidth -
-        parseFloat(opDisplayStyles.paddingLeft) -
-        parseFloat(opDisplayStyles.paddingRight) -
-        this.state.opDisplayOffset;
 
     if (!isNaN(+key) || key === ".") {
       if (
@@ -112,7 +121,7 @@ class Main extends Component {
       )
         return;
 
-      if (isExceed) {
+      if (isExceed(opDisplaySpan)) {
         const prevOpDispVal = opDisplaySpan.innerHTML;
 
         opDisplaySpan.innerHTML = this.state.displayLimitMsg;
@@ -124,33 +133,32 @@ class Main extends Component {
         });
       } else {
         if (key === ".") {
-          displaySpan.innerHTML =
-            displaySpan.innerHTML === "&nbsp;"
-              ? `0${key}`
-              : displaySpan.innerHTML +
-                (this.state.operators.includes(displaySpan.innerHTML)
-                  ? "0"
-                  : "") +
-                key;
+          const validateAndCombine = (element, initialStr) => {
+            element.innerHTML =
+              element.innerHTML === initialStr
+                ? `0${key}`
+                : element.innerHTML +
+                  (this.state.operators.includes(element.innerHTML)
+                    ? "0"
+                    : "") +
+                  key;
+          };
 
-          opDisplaySpan.innerHTML =
-            opDisplaySpan.innerHTML === "0"
-              ? `0${key}`
-              : opDisplaySpan.innerHTML +
-                (this.state.operators.includes(opDisplaySpan.innerHTML)
-                  ? "0"
-                  : "") +
-                key;
+          validateAndCombine(displaySpan, "&nbsp;");
+          validateAndCombine(opDisplaySpan, "0");
         } else {
-          displaySpan.innerHTML = ["&nbsp;", "0"].includes(
-            displaySpan.innerHTML
-          )
-            ? key
-            : displaySpan.innerHTML + key;
+          const validateAndCombine = (element, initialStr) => {
+            element.innerHTML = [
+              initialStr,
+              "0",
+              ...[this.state.operators[0], ...this.state.operators.slice(2)],
+            ].includes(element.innerHTML)
+              ? key
+              : element.innerHTML + key;
+          };
 
-          opDisplaySpan.innerHTML = ["", "0"].includes(opDisplaySpan.innerHTML)
-            ? key
-            : opDisplaySpan.innerHTML + key;
+          validateAndCombine(displaySpan, "&nbsp;");
+          validateAndCombine(opDisplaySpan, "");
         }
       }
     } else {
@@ -170,17 +178,21 @@ class Main extends Component {
           displaySpan.innerHTML.length - 2
         );
 
+        // The case that the last character is an operator.
         if (this.state.operators.includes(lastChar)) {
-          if (key !== "-") {
-            displaySpan.innerHTML = displaySpan.innerHTML.slice(0, -1) + key;
-          } else {
-            if (
-              lastChar === "-" &&
-              this.state.operators.includes(secondLastChar)
-            )
-              return;
-            displaySpan.innerHTML += key;
-          }
+          if (
+            key === "-" &&
+            lastChar === "-" &&
+            this.state.operators.includes(secondLastChar)
+          )
+            return;
+
+          displaySpan.innerHTML =
+            (displaySpan.innerHTML.length > 1
+              ? lastChar !== "-"
+                ? displaySpan.innerHTML
+                : displaySpan.innerHTML.slice(0, -1)
+              : "") + key;
         } else {
           displaySpan.innerHTML += key;
         }
@@ -205,25 +217,35 @@ class Main extends Component {
           .split(",")
           .map((element) => (element = +element));
 
-        let value =
-          operators === null
-            ? +operands[0]
-            : operators.reduce((sum, operand, id) => {
-                switch (operand) {
-                  case "+":
-                    return (sum += operands[id + 1]);
-                  case "-":
-                    return (sum -= operands[id + 1]);
-                  case "*":
-                    return (sum *= operands[id + 1]);
-                  case "/":
-                    return (sum /= operands[id + 1]);
-                }
-              }, operands[0]);
-        console.log(value);
+        if (!operators) opDisplaySpan.innerHTML = operands[0] || 0;
+        else {
+          let value =
+            operators === null
+              ? +operands[0]
+              : operators.reduce((sum, operand, id) => {
+                  switch (operand) {
+                    case "+":
+                      return (sum += operands[id + 1]);
+                    case "-":
+                      return (sum -= operands[id + 1]);
+                    case "*":
+                      return (sum *= operands[id + 1]);
+                    case "/":
+                      return (sum /= operands[id + 1]);
+                  }
+                }, operands[0]);
+
+          opDisplaySpan.innerHTML = value;
+          if (isExceed(opDisplaySpan)) {
+            opDisplaySpan.style.paddingRight =
+              getComputedStyle(opDisplay).paddingRight;
+            opDisplay.scroll({ left: opDisplaySpan.clientWidth });
+          }
+        }
       } else {
         displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = 0;
+        opDisplaySpan.style.paddingRight = 0;
       }
     }
   }
