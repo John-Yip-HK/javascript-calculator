@@ -9,6 +9,7 @@ class Main extends Component {
     this.state = {
       timeoutObj: null,
       containerOffset: 20,
+      result: null,
       displayLimitMsg: "DIGIT LIMIT MET",
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
@@ -114,12 +115,26 @@ class Main extends Component {
     const opDisplay = document.querySelector("#op-display");
     const opDisplaySpan = opDisplay.firstElementChild;
 
+    if (this.state.result !== null) {
+      opDisplaySpan.style.paddingRight = 0;
+      displaySpan.style.paddingRight = 0;
+    }
+
     if (!isNaN(+key) || key === ".") {
       if (
         this.state.timeoutObj !== null ||
         (key === "." && opDisplaySpan.innerHTML.includes(key))
       )
         return;
+
+      if (this.state.result !== null) {
+        displaySpan.innerHTML = key === "." ? "&nbsp;" : "";
+        opDisplaySpan.innerHTML = key === "." ? "0" : "";
+
+        this.setState({
+          result: null,
+        });
+      }
 
       if (isExceed(opDisplaySpan)) {
         const prevOpDispVal = opDisplaySpan.innerHTML;
@@ -162,6 +177,12 @@ class Main extends Component {
         }
       }
     } else {
+      if (this.state.result !== null) {
+        displaySpan.innerHTML = this.state.result;
+        this.setState({
+          result: null,
+        });
+      }
       clearTimeoutObj();
 
       if (this.state.operators.includes(key)) {
@@ -180,6 +201,16 @@ class Main extends Component {
 
         // The case that the last character is an operator.
         if (this.state.operators.includes(lastChar)) {
+          // Need to separate the case that key is "-" and key is not "-".
+          /**
+           * Possible cases in displaySpan.innerHTML:
+           * 1. Only contains "&nbsp;".
+           * 2. Only contains a number (integer or decimal number) or operator.
+           * 3. The last character is a digit or decimal.
+           * 4. The last character is an operator.
+           *    4a. Only the last character is an operator.
+           *    4b. The seconr last character is also an operator.
+           */
           if (
             key === "-" &&
             lastChar === "-" &&
@@ -189,7 +220,7 @@ class Main extends Component {
 
           displaySpan.innerHTML =
             (displaySpan.innerHTML.length > 1
-              ? lastChar !== "-"
+              ? (lastChar === "-" && key === "-") || key === "-"
                 ? displaySpan.innerHTML
                 : displaySpan.innerHTML.slice(0, -1)
               : "") + key;
@@ -235,18 +266,32 @@ class Main extends Component {
                   }
                 }, operands[0]);
 
+          displaySpan.innerHTML += `=${value}`;
           opDisplaySpan.innerHTML = value;
+          this.setState({
+            result: value,
+          });
           if (isExceed(opDisplaySpan)) {
-            opDisplaySpan.style.paddingRight =
-              getComputedStyle(opDisplay).paddingRight;
+            opDisplaySpan.style.paddingRight = `12px`;
             opDisplay.scroll({ left: opDisplaySpan.clientWidth });
           }
         }
       } else {
         displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = 0;
+
         opDisplaySpan.style.paddingRight = 0;
+        displaySpan.style.paddingRight = 0;
+
+        this.setState({
+          result: null,
+        });
       }
+    }
+
+    if (isExceed(displaySpan)) {
+      displaySpan.style.paddingRight = `12px`;
+      displaySpan.parentElement.scroll({ left: displaySpan.clientWidth });
     }
   }
 

@@ -61,10 +61,7 @@ body {
     text-align: right;
     background-color: $black;
 
-    #display {
-      word-break: break-all;
-    }
-
+    #display,
     #op-display {
       overflow-x: auto;
     }
