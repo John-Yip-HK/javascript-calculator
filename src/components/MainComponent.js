@@ -99,15 +99,15 @@ class Main extends Component {
      * @param {HTMLElement} element
      * @returns A boolean of whether the element width exceeds the difference between container width and offset.
      */
-    const isExceed = (element) => {
+    const isExceed = (element, offset = this.state.containerOffset) => {
       const parent = element.parentElement;
-      const elementComputedStyles = getComputedStyle(parent);
+      const parentComputedStyles = getComputedStyle(parent);
       return (
         element.clientWidth >=
         parent.clientWidth -
-          parseFloat(elementComputedStyles.paddingLeft) -
-          parseFloat(elementComputedStyles.paddingRight) -
-          this.state.containerOffset
+          parseFloat(parentComputedStyles.paddingLeft) -
+          parseFloat(parentComputedStyles.paddingRight) -
+          offset
       );
     };
 
@@ -120,16 +120,14 @@ class Main extends Component {
       displaySpan.style.paddingRight = 0;
     }
 
-    if (!isNaN(+key) || key === ".") {
-      if (
-        this.state.timeoutObj !== null ||
-        (key === "." && opDisplaySpan.innerHTML.includes(key))
-      )
-        return;
+    if (!isNaN(+key)) {
+      // The key is a number.
+
+      if (this.state.timeoutObj !== null) return;
 
       if (this.state.result !== null) {
-        displaySpan.innerHTML = key === "." ? "&nbsp;" : "";
-        opDisplaySpan.innerHTML = key === "." ? "0" : "";
+        displaySpan.innerHTML = "";
+        opDisplaySpan.innerHTML = "";
 
         this.setState({
           result: null,
@@ -147,35 +145,56 @@ class Main extends Component {
           }, 1000),
         });
       } else {
-        if (key === ".") {
-          const validateAndCombine = (element, initialStr) => {
-            element.innerHTML =
-              element.innerHTML === initialStr
-                ? `0${key}`
-                : element.innerHTML +
-                  (this.state.operators.includes(element.innerHTML)
-                    ? "0"
-                    : "") +
-                  key;
-          };
+        const validateAndCombine = (element, initialStr) => {
+          const elementStr = element.innerHTML;
+          let lastIdxOfOp = this.state.operators.reduce((id, op) => {
+            id = Math.max(id, elementStr.lastIndexOf(op));
+            return id;
+          }, -1);
 
-          validateAndCombine(displaySpan, "&nbsp;");
-          validateAndCombine(opDisplaySpan, "0");
-        } else {
-          const validateAndCombine = (element, initialStr) => {
-            element.innerHTML = [
-              initialStr,
-              "0",
-              ...[this.state.operators[0], ...this.state.operators.slice(2)],
-            ].includes(element.innerHTML)
-              ? key
-              : element.innerHTML + key;
-          };
+          if ([initialStr, "0", "+", "*", "/"].includes(elementStr))
+            element.innerHTML = key;
+          else if (
+            elementStr.charAt(elementStr.length - 1) === "0" &&
+            lastIdxOfOp !== -1 &&
+            elementStr.slice(lastIdxOfOp + 1) === "0"
+          ) {
+            // The case that lastly input number is zero and the last number is not a decimal number.
+            element.innerHTML = elementStr.slice(0, -1) + key;
+          } else element.innerHTML += key;
+        };
 
-          validateAndCombine(displaySpan, "&nbsp;");
-          validateAndCombine(opDisplaySpan, "");
-        }
+        validateAndCombine(displaySpan, "&nbsp;");
+        validateAndCombine(opDisplaySpan, "");
       }
+    } else if (key === ".") {
+      if (opDisplaySpan.innerHTML.includes(key)) return;
+
+      if (this.state.result !== null) {
+        displaySpan.innerHTML = "&nbsp;";
+        opDisplaySpan.innerHTML = "0";
+
+        this.setState({
+          result: null,
+        });
+      }
+
+      const validateAndCombine = (element, initialStr) => {
+        if (element.innerHTML === initialStr) element.innerHTML = `0${key}`;
+        else if (this.state.operators.includes(element.innerHTML))
+          element.innerHTML =
+            (element.innerHTML === "-" ? "-" : "") + `0${key}`;
+        else if (
+          this.state.operators.includes(
+            element.innerHTML.charAt(element.innerHTML.length - 1)
+          )
+        )
+          element.innerHTML += `0${key}`;
+        else element.innerHTML += key;
+      };
+
+      validateAndCombine(displaySpan, "&nbsp;");
+      validateAndCombine(opDisplaySpan, "0");
     } else {
       if (this.state.result !== null) {
         displaySpan.innerHTML = this.state.result;
@@ -186,46 +205,43 @@ class Main extends Component {
       clearTimeoutObj();
 
       if (this.state.operators.includes(key)) {
-        if (displaySpan.innerHTML === "&nbsp;") {
+        // Need to separate the case that key is "-" and key is not "-".
+        /**
+         * Possible cases in displaySpan.innerHTML:
+         * 1. Only contains "&nbsp;".
+         * 2. Only contains a number (integer or decimal number) or operator.
+         * 3. The last character is a digit or decimal.
+         * 4. The last character is an operator.
+         *    4a. Only the last character is an operator.
+         *    4b. The second last character is also an operator.
+         */
+        const displaySpanStr = displaySpan.innerHTML;
+        const lastChar = displaySpanStr.charAt(displaySpanStr.length - 1);
+        const nextLastChar = displaySpanStr.charAt(displaySpanStr.length - 2);
+        const nextLastCharIsOp = this.state.operators.includes(nextLastChar);
+
+        if (
+          displaySpanStr === "&nbsp;" ||
+          this.state.operators.includes(displaySpanStr)
+        ) {
           displaySpan.innerHTML = key;
-          opDisplaySpan.innerHTML = key;
-          return;
-        }
-
-        const lastChar = displaySpan.innerHTML.charAt(
-          displaySpan.innerHTML.length - 1
-        );
-        const secondLastChar = displaySpan.innerHTML.charAt(
-          displaySpan.innerHTML.length - 2
-        );
-
-        // The case that the last character is an operator.
-        if (this.state.operators.includes(lastChar)) {
-          // Need to separate the case that key is "-" and key is not "-".
-          /**
-           * Possible cases in displaySpan.innerHTML:
-           * 1. Only contains "&nbsp;".
-           * 2. Only contains a number (integer or decimal number) or operator.
-           * 3. The last character is a digit or decimal.
-           * 4. The last character is an operator.
-           *    4a. Only the last character is an operator.
-           *    4b. The seconr last character is also an operator.
-           */
-          if (
-            key === "-" &&
-            lastChar === "-" &&
-            this.state.operators.includes(secondLastChar)
-          )
-            return;
-
-          displaySpan.innerHTML =
-            (displaySpan.innerHTML.length > 1
-              ? (lastChar === "-" && key === "-") || key === "-"
-                ? displaySpan.innerHTML
-                : displaySpan.innerHTML.slice(0, -1)
-              : "") + key;
+        } else if (
+          !isNaN(+displaySpanStr) ||
+          !isNaN(+lastChar) ||
+          lastChar === "."
+        ) {
+          displaySpan.innerHTML += (lastChar === "." ? "0" : "") + key;
         } else {
-          displaySpan.innerHTML += key;
+          /**
+           * Case 1: [0-9.](*)
+           * Case 2: [0-9.](*)-
+           */
+          if (key === "-") {
+            if (!nextLastCharIsOp) displaySpan.innerHTML += key;
+          } else {
+            displaySpan.innerHTML =
+              displaySpan.innerHTML.slice(0, !nextLastCharIsOp ? -1 : -2) + key;
+          }
         }
 
         opDisplaySpan.innerHTML = key;
@@ -243,34 +259,32 @@ class Main extends Component {
         */
         const regex = /(?<=[0-9.]+)[\+\-\*\/]/gi;
         const operators = displaySpan.innerHTML.match(regex);
-        const operands = displaySpan.innerHTML
-          .replace(regex, ",")
-          .split(",")
-          .map((element) => (element = +element));
+        const operands = displaySpan.innerHTML.replace(regex, ",").split(",");
+        let value;
 
-        if (!operators) opDisplaySpan.innerHTML = operands[0] || 0;
+        if (!operators) value = +operands[0] || 0;
         else {
-          let value =
+          value =
             operators === null
               ? +operands[0]
               : operators.reduce((sum, operand, id) => {
                   switch (operand) {
                     case "+":
-                      return (sum += operands[id + 1]);
+                      return (sum += +operands[id + 1]);
                     case "-":
-                      return (sum -= operands[id + 1]);
+                      return (sum -= +operands[id + 1]);
                     case "*":
-                      return (sum *= operands[id + 1]);
+                      return (sum *= +operands[id + 1]);
                     case "/":
-                      return (sum /= operands[id + 1]);
+                      return (sum /= +operands[id + 1]);
                   }
-                }, operands[0]);
+                }, +operands[0]);
 
-          displaySpan.innerHTML += `=${value}`;
           opDisplaySpan.innerHTML = value;
           this.setState({
             result: value,
           });
+
           if (isExceed(opDisplaySpan)) {
             opDisplaySpan.style.paddingRight = `12px`;
             opDisplay.scroll({ left: opDisplaySpan.clientWidth });
@@ -289,7 +303,7 @@ class Main extends Component {
       }
     }
 
-    if (isExceed(displaySpan)) {
+    if (isExceed(displaySpan, 0)) {
       displaySpan.style.paddingRight = `12px`;
       displaySpan.parentElement.scroll({ left: displaySpan.clientWidth });
     }
