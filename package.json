@@ -1,5 +1,6 @@
 {
   "name": "javascript-calculator",
+  "homepage": "https://john-yip-hk.github.io/javascript-calculator/",
   "version": "0.1.0",
   "private": false,
   "dependencies": {
