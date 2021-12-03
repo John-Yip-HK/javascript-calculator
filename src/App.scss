@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap");
-@import url("//db.onlinewebfonts.com/c/ce4b0ee545ec52c2ec8cec62d23ffb09?family=Calculator");
+@import url("https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap");
 @import "~bootstrap/scss/functions";
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
@@ -56,7 +56,7 @@ body {
   }
 
   #display-container {
-    font-family: "Calculator", monospace;
+    font-family: "Courier Prime", monospace;
     font-size: 36px;
     text-align: right;
     background-color: $black;

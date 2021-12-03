@@ -10,7 +10,7 @@ class Main extends Component {
       timeoutObj: null,
       containerOffset: 20,
       result: null,
-      displayLimitMsg: "DIGIT LIMIT MET",
+      displayLimitMsg: "LIMIT MET",
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
         1: "one",
