@@ -257,9 +257,12 @@ class Main extends Component {
 
         1+2-3*4/5+-6-7.0 = 1 + 2 - 3 * 4 / 5 + (-6) - 7.0
         */
-        const regex = /(?<=[0-9.]+)[\+\-\*\/]/gi;
+        const regex = /(?<=[\d.]+)[+\-*/]/gi;
         const operators = displaySpan.innerHTML.match(regex);
         const operands = displaySpan.innerHTML.replace(regex, ",").split(",");
+
+        console.log(displaySpan.innerHTML.match(/(?:[\d.])([+\-*/])/gi).map(op => op.slice(1)));
+
         let value;
 
         if (!operators) value = +operands[0] || 0;
@@ -270,14 +273,22 @@ class Main extends Component {
               : operators.reduce((sum, operand, id) => {
                   switch (operand) {
                     case "+":
-                      return (sum += +operands[id + 1]);
+                      (sum += +operands[id + 1]);
+                      break;
                     case "-":
-                      return (sum -= +operands[id + 1]);
+                      (sum -= +operands[id + 1]);
+                      break;
                     case "*":
-                      return (sum *= +operands[id + 1]);
+                      (sum *= +operands[id + 1]);
+                      break;
                     case "/":
-                      return (sum /= +operands[id + 1]);
+                      (sum /= +operands[id + 1]);
+                      break;
+                    default:
+                      break;
                   }
+
+                  return sum;
                 }, +operands[0]);
 
           opDisplaySpan.innerHTML = value;
