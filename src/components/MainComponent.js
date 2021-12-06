@@ -137,6 +137,12 @@ class Main extends Component {
     const displaySpan = document.querySelector("#display > span");
     const opDisplay = document.querySelector("#op-display");
     const opDisplaySpan = opDisplay.firstElementChild;
+    const userAgentString = navigator.userAgent;
+
+    if (this.state.result !== null) {
+      opDisplaySpan.style.paddingRight = 0;
+      displaySpan.style.paddingRight = 0;
+    }
 
     if (!isNaN(+key)) {
       // The key is a number.
@@ -299,29 +305,48 @@ class Main extends Component {
           value = +operands[0] || 0;
         }
         else {
-          value = operators.reduce((sum, operand, id) => {
-            switch (operand) {
-              case "+":
-                (sum += +operands[id + 1]);
-                break;
-              case "-":
-                (sum -= +operands[id + 1]);
-                break;
-              case "*":
-                (sum *= +operands[id + 1]);
-                break;
-              case "/":
-                (sum /= +operands[id + 1]);
-                break;
-              default:
-                break;
-            }
+          try {
+            value = operators.reduce((sum, operand, id) => {
+              switch (operand) {
+                case "+":
+                  (sum += +operands[id + 1]);
+                  break;
+                case "-":
+                  (sum -= +operands[id + 1]);
+                  break;
+                case "*":
+                  (sum *= +operands[id + 1]);
+                  break;
+                case "/":
+                  const operand = +operands[id + 1];
+                  if ([0, -0].includes(operand)) throw new Error("DIV BY 0");
+                  (sum /= operand);
+                  break;
+                default:
+                  break;
+              }
 
-            return sum;
-          }, +operands[0]);
+              return sum;
+            }, +operands[0]);
+          }
+          catch (err) {
+            displaySpan.innerHTML = err.message;
+            opDisplaySpan.innerHTML = "";
+            this.setState({
+              result: null,
+            });
+            return;
+          }
         }
 
         opDisplaySpan.innerHTML = value;
+
+        if (isExceed(opDisplaySpan)) {
+          if (userAgentString.includes("Firefox"))
+            opDisplaySpan.style.paddingRight = `12px`;
+          // opDisplay.scroll({ left: opDisplaySpan.clientWidth });
+        }
+
         this.setState({
           result: value,
         });
@@ -329,10 +354,19 @@ class Main extends Component {
         displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = 0;
 
+        opDisplaySpan.style.paddingRight = 0;
+        displaySpan.style.paddingRight = 0;
+
         this.setState({
           result: null,
         });
       }
+    }
+
+    if (isExceed(displaySpan, 0)) {
+      if (userAgentString.includes("Firefox"))
+        displaySpan.style.paddingRight = `12px`;
+      displaySpan.parentElement.scroll({ left: displaySpan.clientWidth });
     }
   }
 
