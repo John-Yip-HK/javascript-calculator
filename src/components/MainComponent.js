@@ -11,6 +11,7 @@ class Main extends Component {
       containerOffset: 20,
       result: null,
       displayLimitMsg: "LIMIT MET",
+      pressedKeyElement: null,
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
         1: "one",
@@ -67,19 +68,41 @@ class Main extends Component {
 
     if (elementId) {
       this.updateDisplay(key);
-      document.getElementById(elementId).classList.add("keyActive");
+      const keyElement = document.getElementById(elementId);
+      keyElement.classList.add("keyActive");
+
+      if (this.state.operators.includes(key)) {
+        this.setState({
+          pressedKeyElement: keyElement
+        });
+      }
     }
     if (key === "/") event.preventDefault();
   }
 
   resetKeypad(event) {
-    const elementId = this.findElementId(event.key);
+    const key = event.key;
+    const elementId = this.findElementId(key);
 
-    if (elementId) {
-      document.getElementById(elementId).classList.remove("keyActive");
+    if (this.state.pressedKeyElement || elementId) {
+      const element = this.state.pressedKeyElement 
+      || document.getElementById(elementId);
+
+      element.classList.remove("keyActive");
+
+      if (this.state.operators.includes(key)) {
+        this.setState({
+          pressedKeyElement: null
+        });
+      }
     }
   }
 
+  /**
+   * Becomes a god function! Need to separate out methods.
+   * @param {*} key 
+   * @returns 
+   */
   updateDisplay(key) {
     // Helper methods.
     /**
@@ -114,11 +137,6 @@ class Main extends Component {
     const displaySpan = document.querySelector("#display > span");
     const opDisplay = document.querySelector("#op-display");
     const opDisplaySpan = opDisplay.firstElementChild;
-
-    if (this.state.result !== null) {
-      opDisplaySpan.style.paddingRight = 0;
-      displaySpan.style.paddingRight = 0;
-    }
 
     if (!isNaN(+key)) {
       // The key is a number.
@@ -255,68 +273,66 @@ class Main extends Component {
         = 46 / 4
         = 11.5
 
-        1+2-3*4/5+-6-7.0 = 1 + 2 - 3 * 4 / 5 + (-6) - 7.0
-        */
-        const regex = /(?<=[\d.]+)[+\-*/]/gi;
-        const operators = displaySpan.innerHTML.match(regex);
-        const operands = displaySpan.innerHTML.replace(regex, ",").split(",");
+        Test string:
+        -0+1-2*3/4+-5--6*-7.0/-0.008*9.-10
 
-        console.log(displaySpan.innerHTML.match(/(?:[\d.])([+\-*/])/gi).map(op => op.slice(1)));
+        */
+        const regex = /[\d.](?:[+\-*/])/g;
+        let operators = displaySpan.innerHTML.match(regex);
+        let operands = displaySpan.innerHTML.replace(regex, ",").split(",");
+
+        if (operators) {
+          operands = operands.map((op, id) => {
+            if (operators && id < operators.length)
+              return (op + operators[id].slice(0, -1));
+            else return op;
+          });
+          operators = operators.map(op => op.slice(1));
+        }
+        // console.log(operators, operands);
+        // return;
 
         let value;
 
-        if (!operators) value = +operands[0] || 0;
-        else {
-          value =
-            operators === null
-              ? +operands[0]
-              : operators.reduce((sum, operand, id) => {
-                  switch (operand) {
-                    case "+":
-                      (sum += +operands[id + 1]);
-                      break;
-                    case "-":
-                      (sum -= +operands[id + 1]);
-                      break;
-                    case "*":
-                      (sum *= +operands[id + 1]);
-                      break;
-                    case "/":
-                      (sum /= +operands[id + 1]);
-                      break;
-                    default:
-                      break;
-                  }
-
-                  return sum;
-                }, +operands[0]);
-
-          opDisplaySpan.innerHTML = value;
-          this.setState({
-            result: value,
-          });
-
-          if (isExceed(opDisplaySpan)) {
-            opDisplaySpan.style.paddingRight = `12px`;
-            opDisplay.scroll({ left: opDisplaySpan.clientWidth });
-          }
+        if (!operators) {
+          if (operands[0] === "-0") operands[0] = "0";
+          value = +operands[0] || 0;
         }
+        else {
+          value = operators.reduce((sum, operand, id) => {
+            switch (operand) {
+              case "+":
+                (sum += +operands[id + 1]);
+                break;
+              case "-":
+                (sum -= +operands[id + 1]);
+                break;
+              case "*":
+                (sum *= +operands[id + 1]);
+                break;
+              case "/":
+                (sum /= +operands[id + 1]);
+                break;
+              default:
+                break;
+            }
+
+            return sum;
+          }, +operands[0]);
+        }
+
+        opDisplaySpan.innerHTML = value;
+        this.setState({
+          result: value,
+        });
       } else {
         displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = 0;
-
-        opDisplaySpan.style.paddingRight = 0;
-        displaySpan.style.paddingRight = 0;
 
         this.setState({
           result: null,
         });
       }
-    }
-
-    if (isExceed(displaySpan, 0)) {
-      displaySpan.style.paddingRight = `12px`;
-      displaySpan.parentElement.scroll({ left: displaySpan.clientWidth });
     }
   }
 
