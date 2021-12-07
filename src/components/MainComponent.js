@@ -98,10 +98,9 @@ class Main extends Component {
     }
   }
 
-  /**
-   * Becomes a god function! Need to separate out methods.
-   * @param {*} key 
-   * @returns 
+  /*
+   * Becomes a god function!
+   * Definitely need refactoring.
    */
   updateDisplay(key) {
     // Helper methods.
@@ -143,6 +142,10 @@ class Main extends Component {
       opDisplaySpan.style.paddingRight = 0;
       displaySpan.style.paddingRight = 0;
     }
+    if (displaySpan.innerHTML === "DIV BY 0") {
+      displaySpan.innerHTML = "&nbsp;";
+      opDisplaySpan.innerHTML = "";
+    }
 
     if (!isNaN(+key)) {
       // The key is a number.
@@ -150,7 +153,7 @@ class Main extends Component {
       if (this.state.timeoutObj !== null) return;
 
       if (this.state.result !== null) {
-        displaySpan.innerHTML = "";
+        displaySpan.innerHTML = "&nbsp;";
         opDisplaySpan.innerHTML = "";
 
         this.setState({
@@ -344,7 +347,7 @@ class Main extends Component {
         if (isExceed(opDisplaySpan)) {
           if (userAgentString.includes("Firefox"))
             opDisplaySpan.style.paddingRight = `12px`;
-          // opDisplay.scroll({ left: opDisplaySpan.clientWidth });
+          
         }
 
         this.setState({
