@@ -10,8 +10,7 @@ class Main extends Component {
       timeoutObj: null,
       containerOffset: 20,
       result: null,
-      displayLimitMsg: "LIMIT MET",
-      divBy0ErrorMsg: "DIV BY 0",
+      hasError: false,
       pressedElements: [],
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
@@ -142,7 +141,7 @@ class Main extends Component {
       if (isExceed(spanObjs.opDisplaySpan, this.state.containerOffset)) {
         const prevOpDispVal = spanObjs.opDisplaySpan.innerHTML;
 
-        spanObjs.opDisplaySpan.innerHTML = this.state.displayLimitMsg;
+        spanObjs.opDisplaySpan.innerHTML = "LIMIT MET";
         this.setState({
           timeoutObj: setTimeout(() => {
             spanObjs.opDisplaySpan.innerHTML = prevOpDispVal;
@@ -156,11 +155,14 @@ class Main extends Component {
     };
 
     /**
-     * Reset right padding of spans.
+     * Reset related styling of spans.
      */
-    const resetSpanRightPadding = () => {
+    const resetSpanRelatedStyling = () => {
       spanObjs.opDisplaySpan.style.paddingRight = 0;
       spanObjs.displaySpan.style.paddingRight = 0;
+
+      spanObjs.displaySpan.parentElement.style.textAlign = "right";
+      spanObjs.opDisplaySpan.parentElement.style.textAlign = "right";
     };
 
     /**
@@ -172,6 +174,7 @@ class Main extends Component {
     }
 
     /**
+     * Add the provided key in the way specified in callback function.
      * 
      * @param {HTMLElement} element The key-receiving span element.
      * @param {String} initialStr A default string inside the element.
@@ -183,12 +186,15 @@ class Main extends Component {
 
     // Reset right padding for both spans if result is not null.
     if (this.state.result !== null) {
-      resetSpanRightPadding();
+      resetSpanRelatedStyling();
     }
 
-    // Reset display value of spans if division-by-zero error has occured.
-    if (spanObjs.displaySpan.innerHTML === this.state.divBy0ErrorMsg) {
+    // Reset display value of spans if error has occured.
+    if (this.state.hasError) {
       resetSpanInnerHTML();
+      this.setState({
+        hasError: false,
+      });
     }
 
     if (!isNaN(+key) || key === ".") {
@@ -301,19 +307,8 @@ class Main extends Component {
     }
     else if (key === "=" || key === "Enter") {
       clearTimeoutObj();
-      /*
-      Calculate the result according to immediate execution logic.
-      For example:
-      3 + 5 x 6 - 2 / 4 
-      = 8 x 6 - 2 / 4
-      = 48 - 2 / 4
-      = 46 / 4
-      = 11.5
 
-      Test string:
-      -0+1-2*3/4+-5--6*-7.0/-0.008*9.-10
-
-      */
+      // Calculate the result according to fomula logic.
       const regex = /[\d.](?:[+\-*/])/g;
       let operators = spanObjs.displaySpan.innerHTML.match(regex);
       let operands = spanObjs.displaySpan.innerHTML.replace(regex, ",").split(",");
@@ -331,43 +326,75 @@ class Main extends Component {
 
       let value;
 
-      if (!operators) {
-        if (operands[0] === "-0") operands[0] = "0";
-        value = +operands[0] || 0;
-      }
-      else {
-        try {
-          value = operators.reduce((sum, operand, id) => {
-            switch (operand) {
-              case "+":
-                (sum += +operands[id + 1]);
-                break;
-              case "-":
-                (sum -= +operands[id + 1]);
-                break;
-              case "*":
-                (sum *= +operands[id + 1]);
-                break;
-              case "/":
-                const operand = +operands[id + 1];
-                if ([0, -0].includes(operand)) throw new Error(this.state.divBy0ErrorMsg);
-                (sum /= operand);
-                break;
-              default:
-                break;
+      try {
+        let lastOperand = operands[operands.length-1];
+
+        if (
+            lastOperand === "" || 
+            lastOperand === "-"
+        ) {
+          throw new Error("ERROR,FORMULA");
+        }
+        else if (lastOperand.slice(-1) === ".") {
+          throw new Error("ERROR,LAST OPERAND");
+        }
+        else if (!operators) {
+          if (operands[0] === "-0") operands[0] = "0";
+          value = +operands[0] || 0;
+        }
+        else {
+          const calculateValue = (operators, operands) => {
+            const stack = [+operands.shift()];
+
+            while (operators.length > 0) {
+              const operator = operators.shift();
+              const operand = +operands.shift();
+
+              if (operator === "+" || operator === "-") {
+                stack.push(operator, operand);
+              }
+              else {
+                if (operator === "*") {
+                  stack.push(stack.pop() * operand);
+                }
+                else {
+                  if ([0, -0].includes(operand))
+                    throw new Error("ERROR,DIV BY 0");
+                  stack.push(stack.pop() / operand);
+                }
+              }
             }
 
-            return sum;
-          }, +operands[0]);
+            while (stack.length > 1) {
+              const operandTwo = stack.pop();
+              const operator = stack.pop();
+
+              if (operator === "+") {
+                stack.push(stack.pop() + operandTwo);
+              }
+              else {
+                stack.push(stack.pop() - operandTwo);
+              }
+            }
+
+            return stack[0];
+          };
+
+          value = calculateValue(operators, operands);
         }
-        catch (err) {
-          spanObjs.displaySpan.innerHTML = err.message;
-          spanObjs.opDisplaySpan.innerHTML = "";
-          this.setState({
-            result: null,
-          });
-          return;
-        }
+      }
+      catch (err) {
+        [spanObjs.displaySpan.innerHTML,
+        spanObjs.opDisplaySpan.innerHTML] = err.message.split(",");
+
+        spanObjs.displaySpan.parentElement.style.textAlign = "left";
+        spanObjs.opDisplaySpan.parentElement.style.textAlign = "left";
+
+        this.setState({
+          result: null,
+          hasError: true,
+        });
+        return;
       }
 
       spanObjs.opDisplaySpan.innerHTML = value;
@@ -383,7 +410,7 @@ class Main extends Component {
     else {
       clearTimeoutObj();
       resetSpanInnerHTML();
-      resetSpanRightPadding();
+      resetSpanRelatedStyling();
 
       this.setState({
         result: null,
