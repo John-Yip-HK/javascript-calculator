@@ -10,28 +10,28 @@ class Main extends Component {
       timeoutObj: null,
       containerOffset: 20,
       result: null,
-      displayLimitMsg: "LIMIT MET",
-      pressedKeyElement: null,
+      hasError: false,
+      pressedElements: [],
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
-        1: "one",
-        2: "two",
-        3: "three",
-        4: "four",
-        5: "five",
-        6: "six",
-        7: "seven",
-        8: "eight",
-        9: "nine",
-        0: "zero",
+        "1": "one",
+        "2": "two",
+        "3": "three",
+        "4": "four",
+        "5": "five",
+        "6": "six",
+        "7": "seven",
+        "8": "eight",
+        "9": "nine",
+        "0": "zero",
         ".": "decimal",
-        Escape: "clear",
+        "Escape": "clear",
         "/": "divide",
         "*": "multiply",
         "+": "add",
         "-": "subtract",
         "=": "equals",
-        Enter: "equals",
+        "Enter": "equals",
       },
     };
     this.updateDisplay = this.updateDisplay.bind(this);
@@ -47,19 +47,12 @@ class Main extends Component {
   }
 
   componentWillUnmount() {
-    document.removeEventListener(
-      "keydown",
-      this.detectKeyStrokeAndUpdateDisplay
-    );
+    document.removeEventListener("keydown", this.detectKeyStrokeAndUpdateDisplay);
     document.removeEventListener("keyup", this.resetKeypad);
   }
 
   findElementId(key) {
-    return (
-      this.state.keyToClickableId[key] ||
-      this.state.keyToClickableId[+key] ||
-      null
-    );
+    return this.state.keyToClickableId[key] || null;
   }
 
   detectKeyStrokeAndUpdateDisplay(event) {
@@ -70,58 +63,55 @@ class Main extends Component {
       this.updateDisplay(key);
       const keyElement = document.getElementById(elementId);
       keyElement.classList.add("keyActive");
-
-      if (this.state.operators.includes(key)) {
-        this.setState({
-          pressedKeyElement: keyElement
-        });
-      }
+      this.state.pressedElements.push(elementId);
     }
     if (key === "/") event.preventDefault();
   }
 
-  resetKeypad(event) {
-    const key = event.key;
-    const elementId = this.findElementId(key);
-
-    if (this.state.pressedKeyElement || elementId) {
-      const element = this.state.pressedKeyElement 
-      || document.getElementById(elementId);
-
-      element.classList.remove("keyActive");
-
-      if (this.state.operators.includes(key)) {
-        this.setState({
-          pressedKeyElement: null
-        });
-      }
+  resetKeypad() {
+    /*
+    Clear keyActive classes for all elements which id 
+    is stored in pressedElements array to prevent clickable keypads
+    from being unable to restore the unclicked styling when they
+    are pressed and released at the same time.
+    */ 
+    while (this.state.pressedElements.length > 0) {
+      const keyElement = document.getElementById(
+        this.state.pressedElements.pop()
+      );
+      keyElement.classList.remove("keyActive");
     }
   }
 
   /*
-   * Becomes a god function!
-   * Definitely need refactoring.
+   * Need to fix jumping to another line problem when "-" is typed into a number just not exceeding limit.
    */
   updateDisplay(key) {
+    const spanObjs = {
+      displaySpan: document.querySelector("#display > span"),
+      opDisplaySpan: document.querySelector("#op-display > span"),
+    };
+
     // Helper methods.
     /**
      * Clear the timeout object stored in the component state.
      * @returns nothing.
      */
     const clearTimeoutObj = () => {
-      if (!this.state.timeoutObj) return;
-
-      clearTimeout(this.state.timeoutObj);
-      this.setState({
-        timeoutObj: null,
-      });
+      if (this.state.timeoutObj) {
+        clearTimeout(this.state.timeoutObj);
+        this.setState({
+          timeoutObj: null,
+        });        
+      }
     };
+
     /**
-     * Check whether the length of element stored with strings exceeds the length of outer element container minus an offset to prevent numbers in element span from being pushed to the right.
+     * Check whether the length of element stored with strings exceeds the length of outer div container minus an offset to prevent span element from being pushed to the right.
      * @param {HTMLElement} element
      * @returns A boolean of whether the element width exceeds the difference between container width and offset.
      */
-    const isExceed = (element, offset = this.state.containerOffset) => {
+    const isExceed = (element, offset = 0) => {
       const parent = element.parentElement;
       const parentComputedStyles = getComputedStyle(parent);
       return (
@@ -133,48 +123,117 @@ class Main extends Component {
       );
     };
 
-    const displaySpan = document.querySelector("#display > span");
-    const opDisplay = document.querySelector("#op-display");
-    const opDisplaySpan = opDisplay.firstElementChild;
-    const userAgentString = navigator.userAgent;
+    /**
+     * Create a right padding when span width exceeds width of its outer container.
+     * @param {HTMLElement} span 
+     */
+    const createRightPadding = (span) => {
+      if (navigator.userAgent.includes("Firefox"))
+        span.style.paddingRight = 
+          getComputedStyle(span.parentElement).paddingRight;
+    };
+    
+    /**
+     * Set up a timeout object if the onDisplaySpan width exceeds 
+     * @returns true if a timeout object is set. False otherwise.
+     */
+    const hasSetUpTimeoutObj = () => {
+      if (isExceed(spanObjs.opDisplaySpan, this.state.containerOffset)) {
+        const prevOpDispVal = spanObjs.opDisplaySpan.innerHTML;
 
+        spanObjs.opDisplaySpan.innerHTML = "LIMIT MET";
+        this.setState({
+          timeoutObj: setTimeout(() => {
+            spanObjs.opDisplaySpan.innerHTML = prevOpDispVal;
+            clearTimeoutObj();
+          }, 1000),
+        });
+
+        return true;
+      }
+      else return false;
+    };
+
+    /**
+     * Reset related styling of spans.
+     */
+    const resetSpanRelatedStyling = () => {
+      spanObjs.opDisplaySpan.style.paddingRight = 0;
+      spanObjs.displaySpan.style.paddingRight = 0;
+
+      spanObjs.displaySpan.parentElement.style.textAlign = "right";
+      spanObjs.opDisplaySpan.parentElement.style.textAlign = "right";
+    };
+
+    /**
+     * Reset inner HTML content of spans.
+     */
+    const resetSpanInnerHTML = () => {
+      spanObjs.displaySpan.innerHTML = "&nbsp;";
+      spanObjs.opDisplaySpan.innerHTML = "0";
+    }
+
+    /**
+     * Add the provided key in the way specified in callback function.
+     * 
+     * @param {HTMLElement} element The key-receiving span element.
+     * @param {String} initialStr A default string inside the element.
+     * @param {Function} callback A callback function receiving element and initialStr to decide how to add a key into inner HTML of the element.
+     */
+    const validateAndCombine = (element, initialStr, callback) => {
+      callback(element, initialStr);
+    };
+
+    // Reset right padding for both spans if result is not null.
     if (this.state.result !== null) {
-      opDisplaySpan.style.paddingRight = 0;
-      displaySpan.style.paddingRight = 0;
-    }
-    if (displaySpan.innerHTML === "DIV BY 0") {
-      displaySpan.innerHTML = "&nbsp;";
-      opDisplaySpan.innerHTML = "";
+      resetSpanRelatedStyling();
     }
 
-    if (!isNaN(+key)) {
+    // Reset display value of spans if error has occured.
+    if (this.state.hasError) {
+      resetSpanInnerHTML();
+      this.setState({
+        hasError: false,
+      });
+    }
+
+    if (!isNaN(+key) || key === ".") {
       // The key is a number.
 
-      if (this.state.timeoutObj !== null) return;
+      if ((
+            key === "." && 
+            spanObjs.opDisplaySpan.innerHTML.includes(key)
+          ) || this.state.timeoutObj !== null)
+          return;
 
       if (this.state.result !== null) {
-        displaySpan.innerHTML = "&nbsp;";
-        opDisplaySpan.innerHTML = "";
+        resetSpanInnerHTML();
 
         this.setState({
           result: null,
         });
       }
 
-      if (isExceed(opDisplaySpan)) {
-        const prevOpDispVal = opDisplaySpan.innerHTML;
-
-        opDisplaySpan.innerHTML = this.state.displayLimitMsg;
-        this.setState({
-          timeoutObj: setTimeout(() => {
-            opDisplaySpan.innerHTML = prevOpDispVal;
-            clearTimeoutObj();
-          }, 1000),
-        });
-      } else {
-        const validateAndCombine = (element, initialStr) => {
+      if (!hasSetUpTimeoutObj()) {
+        const callbackFn = key === "."
+          ? (element, initialStr) => {
+            // If key is a decimal.
+            if (element.innerHTML === initialStr) element.innerHTML = `0${key}`;
+            else if (this.state.operators.includes(element.innerHTML))
+              element.innerHTML =
+                (element.innerHTML === "-" ? "-" : "") + `0${key}`;
+            else if (
+              this.state.operators.includes(
+                element.innerHTML.charAt(element.innerHTML.length - 1)
+              )
+            )
+              element.innerHTML += `0${key}`;
+            else element.innerHTML += key;
+          }
+          : (element, initialStr) => {
+            // If key is not a decimal.
           const elementStr = element.innerHTML;
-          let lastIdxOfOp = this.state.operators.reduce((id, op) => {
+          const lastIdxOfOp = this.state.operators.reduce((id, op) => {
             id = Math.max(id, elementStr.lastIndexOf(op));
             return id;
           }, -1);
@@ -191,185 +250,176 @@ class Main extends Component {
           } else element.innerHTML += key;
         };
 
-        validateAndCombine(displaySpan, "&nbsp;");
-        validateAndCombine(opDisplaySpan, "");
+        validateAndCombine(spanObjs.displaySpan, "&nbsp;", callbackFn);
+        validateAndCombine(spanObjs.opDisplaySpan, "", callbackFn);
       }
-    } else if (key === ".") {
-      if (opDisplaySpan.innerHTML.includes(key)) return;
-
+    }
+    else if (this.state.operators.includes(key)) {
       if (this.state.result !== null) {
-        displaySpan.innerHTML = "&nbsp;";
-        opDisplaySpan.innerHTML = "0";
+        spanObjs.displaySpan.innerHTML = this.state.result;
 
-        this.setState({
-          result: null,
-        });
-      }
-
-      const validateAndCombine = (element, initialStr) => {
-        if (element.innerHTML === initialStr) element.innerHTML = `0${key}`;
-        else if (this.state.operators.includes(element.innerHTML))
-          element.innerHTML =
-            (element.innerHTML === "-" ? "-" : "") + `0${key}`;
-        else if (
-          this.state.operators.includes(
-            element.innerHTML.charAt(element.innerHTML.length - 1)
-          )
-        )
-          element.innerHTML += `0${key}`;
-        else element.innerHTML += key;
-      };
-
-      validateAndCombine(displaySpan, "&nbsp;");
-      validateAndCombine(opDisplaySpan, "0");
-    } else {
-      if (this.state.result !== null) {
-        displaySpan.innerHTML = this.state.result;
         this.setState({
           result: null,
         });
       }
       clearTimeoutObj();
 
-      if (this.state.operators.includes(key)) {
-        // Need to separate the case that key is "-" and key is not "-".
+      // Need to separate the case that key is "-" and key is not "-".
+      /**
+       * Possible cases in spanObjs.displaySpan.innerHTML:
+       * 1. Only contains "&nbsp;".
+       * 2. Only contains a number (integer or decimal number) or operator.
+       * 3. The last character is a digit or decimal.
+       * 4. The last character is an operator.
+       *    4a. Only the last character is an operator.
+       *    4b. The second last character is also an operator.
+       */
+      const displaySpanStr = spanObjs.displaySpan.innerHTML;
+      const lastChar = displaySpanStr.charAt(displaySpanStr.length - 1);
+      const nextLastChar = displaySpanStr.charAt(displaySpanStr.length - 2);
+      const nextLastCharIsOp = this.state.operators.includes(nextLastChar);
+
+      if (
+        displaySpanStr === "&nbsp;" ||
+        this.state.operators.includes(displaySpanStr)
+      ) {
+        spanObjs.displaySpan.innerHTML = key;
+      } else if (
+        !isNaN(+displaySpanStr) ||
+        !isNaN(+lastChar) ||
+        lastChar === "."
+      ) {
+        spanObjs.displaySpan.innerHTML += (lastChar === "." ? "0" : "") + key;
+      } else {
         /**
-         * Possible cases in displaySpan.innerHTML:
-         * 1. Only contains "&nbsp;".
-         * 2. Only contains a number (integer or decimal number) or operator.
-         * 3. The last character is a digit or decimal.
-         * 4. The last character is an operator.
-         *    4a. Only the last character is an operator.
-         *    4b. The second last character is also an operator.
+         * Case 1: [0-9.](*)
+         * Case 2: [0-9.](*)-
          */
-        const displaySpanStr = displaySpan.innerHTML;
-        const lastChar = displaySpanStr.charAt(displaySpanStr.length - 1);
-        const nextLastChar = displaySpanStr.charAt(displaySpanStr.length - 2);
-        const nextLastCharIsOp = this.state.operators.includes(nextLastChar);
+        if (key === "-") {
+          if (!nextLastCharIsOp) spanObjs.displaySpan.innerHTML += key;
+        } else {
+          spanObjs.displaySpan.innerHTML =
+            spanObjs.displaySpan.innerHTML.slice(0, !nextLastCharIsOp ? -1 : -2) + key;
+        }
+      }
+
+      spanObjs.opDisplaySpan.innerHTML = key;
+    }
+    else if (key === "=" || key === "Enter") {
+      clearTimeoutObj();
+
+      // Calculate the result according to fomula logic.
+      const regex = /[\d.](?:[+\-*/])/g;
+      let operators = spanObjs.displaySpan.innerHTML.match(regex);
+      let operands = spanObjs.displaySpan.innerHTML.replace(regex, ",").split(",");
+
+      if (operators) {
+        operands = operands.map((op, id) => {
+          if (operators && id < operators.length)
+            return (op + operators[id].slice(0, -1));
+          else return op;
+        });
+        operators = operators.map(op => op.slice(1));
+      }
+      // console.log(operators, operands);
+      // return;
+
+      let value;
+
+      try {
+        let lastOperand = operands[operands.length-1];
 
         if (
-          displaySpanStr === "&nbsp;" ||
-          this.state.operators.includes(displaySpanStr)
+            lastOperand === "" || 
+            lastOperand === "-"
         ) {
-          displaySpan.innerHTML = key;
-        } else if (
-          !isNaN(+displaySpanStr) ||
-          !isNaN(+lastChar) ||
-          lastChar === "."
-        ) {
-          displaySpan.innerHTML += (lastChar === "." ? "0" : "") + key;
-        } else {
-          /**
-           * Case 1: [0-9.](*)
-           * Case 2: [0-9.](*)-
-           */
-          if (key === "-") {
-            if (!nextLastCharIsOp) displaySpan.innerHTML += key;
-          } else {
-            displaySpan.innerHTML =
-              displaySpan.innerHTML.slice(0, !nextLastCharIsOp ? -1 : -2) + key;
-          }
+          throw new Error("ERROR,FORMULA");
         }
-
-        opDisplaySpan.innerHTML = key;
-      } else if (key === "=" || key === "Enter") {
-        /*
-        Calculate the result according to immediate execution logic.
-        For example:
-        3 + 5 x 6 - 2 / 4 
-        = 8 x 6 - 2 / 4
-        = 48 - 2 / 4
-        = 46 / 4
-        = 11.5
-
-        Test string:
-        -0+1-2*3/4+-5--6*-7.0/-0.008*9.-10
-
-        */
-        const regex = /[\d.](?:[+\-*/])/g;
-        let operators = displaySpan.innerHTML.match(regex);
-        let operands = displaySpan.innerHTML.replace(regex, ",").split(",");
-
-        if (operators) {
-          operands = operands.map((op, id) => {
-            if (operators && id < operators.length)
-              return (op + operators[id].slice(0, -1));
-            else return op;
-          });
-          operators = operators.map(op => op.slice(1));
+        else if (lastOperand.slice(-1) === ".") {
+          throw new Error("ERROR,LAST OPERAND");
         }
-        // console.log(operators, operands);
-        // return;
-
-        let value;
-
-        if (!operators) {
+        else if (!operators) {
           if (operands[0] === "-0") operands[0] = "0";
           value = +operands[0] || 0;
         }
         else {
-          try {
-            value = operators.reduce((sum, operand, id) => {
-              switch (operand) {
-                case "+":
-                  (sum += +operands[id + 1]);
-                  break;
-                case "-":
-                  (sum -= +operands[id + 1]);
-                  break;
-                case "*":
-                  (sum *= +operands[id + 1]);
-                  break;
-                case "/":
-                  const operand = +operands[id + 1];
-                  if ([0, -0].includes(operand)) throw new Error("DIV BY 0");
-                  (sum /= operand);
-                  break;
-                default:
-                  break;
+          const calculateValue = (operators, operands) => {
+            const stack = [+operands.shift()];
+
+            while (operators.length > 0) {
+              const operator = operators.shift();
+              const operand = +operands.shift();
+
+              if (operator === "+" || operator === "-") {
+                stack.push(operator, operand);
               }
+              else {
+                if (operator === "*") {
+                  stack.push(stack.pop() * operand);
+                }
+                else {
+                  if ([0, -0].includes(operand))
+                    throw new Error("ERROR,DIV BY 0");
+                  stack.push(stack.pop() / operand);
+                }
+              }
+            }
 
-              return sum;
-            }, +operands[0]);
-          }
-          catch (err) {
-            displaySpan.innerHTML = err.message;
-            opDisplaySpan.innerHTML = "";
-            this.setState({
-              result: null,
-            });
-            return;
-          }
+            while (stack.length > 1) {
+              const operandTwo = stack.pop();
+              const operator = stack.pop();
+
+              if (operator === "+") {
+                stack.push(stack.pop() + operandTwo);
+              }
+              else {
+                stack.push(stack.pop() - operandTwo);
+              }
+            }
+
+            return stack[0];
+          };
+
+          value = calculateValue(operators, operands);
         }
+      }
+      catch (err) {
+        [spanObjs.displaySpan.innerHTML,
+        spanObjs.opDisplaySpan.innerHTML] = err.message.split(",");
 
-        opDisplaySpan.innerHTML = value;
-
-        if (isExceed(opDisplaySpan)) {
-          if (userAgentString.includes("Firefox"))
-            opDisplaySpan.style.paddingRight = `12px`;
-          
-        }
-
-        this.setState({
-          result: value,
-        });
-      } else {
-        displaySpan.innerHTML = "&nbsp;";
-        opDisplaySpan.innerHTML = 0;
-
-        opDisplaySpan.style.paddingRight = 0;
-        displaySpan.style.paddingRight = 0;
+        spanObjs.displaySpan.parentElement.style.textAlign = "left";
+        spanObjs.opDisplaySpan.parentElement.style.textAlign = "left";
 
         this.setState({
           result: null,
+          hasError: true,
         });
+        return;
       }
+
+      spanObjs.opDisplaySpan.innerHTML = value;
+
+      if (isExceed(spanObjs.opDisplaySpan)) {
+        createRightPadding(spanObjs.opDisplaySpan);
+      }
+
+      this.setState({
+        result: value,
+      });
+    }
+    else {
+      clearTimeoutObj();
+      resetSpanInnerHTML();
+      resetSpanRelatedStyling();
+
+      this.setState({
+        result: null,
+      });
     }
 
-    if (isExceed(displaySpan, 0)) {
-      if (userAgentString.includes("Firefox"))
-        displaySpan.style.paddingRight = `12px`;
-      displaySpan.parentElement.scroll({ left: displaySpan.clientWidth });
+    if (isExceed(spanObjs.displaySpan)) {
+      createRightPadding(spanObjs.displaySpan);
+      spanObjs.displaySpan.parentElement.scroll({ left: spanObjs.displaySpan.clientWidth });
     }
   }
 
