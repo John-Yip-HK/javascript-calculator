@@ -10,12 +10,7 @@ export default function Keypad(props) {
     <Row className="row-container" id="keypad-container">
       <Container id="keypad">
         <Row>
-          <Col
-            xs={6}
-            id="clear"
-            className="clickable"
-            onClick={keyPressCallback}
-          >
+          <Col id="clear" className="clickable" onClick={keyPressCallback}>
             AC
           </Col>
           <Col
@@ -31,6 +26,14 @@ export default function Keypad(props) {
             onClick={keyPressCallback}
           >
             *
+          </Col>
+          <Col
+            xs={3}
+            id="backspace"
+            className="clickable"
+            onClick={keyPressCallback}
+          >
+            DEL
           </Col>
         </Row>
         <Row>

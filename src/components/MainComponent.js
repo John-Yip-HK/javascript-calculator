@@ -14,24 +14,25 @@ class Main extends Component {
       pressedElements: [],
       operators: ["+", "-", "*", "/"],
       keyToClickableId: {
-        "1": "one",
-        "2": "two",
-        "3": "three",
-        "4": "four",
-        "5": "five",
-        "6": "six",
-        "7": "seven",
-        "8": "eight",
-        "9": "nine",
-        "0": "zero",
+        1: "one",
+        2: "two",
+        3: "three",
+        4: "four",
+        5: "five",
+        6: "six",
+        7: "seven",
+        8: "eight",
+        9: "nine",
+        0: "zero",
         ".": "decimal",
-        "Escape": "clear",
+        Escape: "clear",
         "/": "divide",
         "*": "multiply",
         "+": "add",
         "-": "subtract",
         "=": "equals",
-        "Enter": "equals",
+        Enter: "equals",
+        Backspace: "backspace",
       },
     };
     this.updateDisplay = this.updateDisplay.bind(this);
@@ -47,7 +48,10 @@ class Main extends Component {
   }
 
   componentWillUnmount() {
-    document.removeEventListener("keydown", this.detectKeyStrokeAndUpdateDisplay);
+    document.removeEventListener(
+      "keydown",
+      this.detectKeyStrokeAndUpdateDisplay
+    );
     document.removeEventListener("keyup", this.resetKeypad);
   }
 
@@ -74,7 +78,7 @@ class Main extends Component {
     is stored in pressedElements array to prevent clickable keypads
     from being unable to restore the unclicked styling when they
     are pressed and released at the same time.
-    */ 
+    */
     while (this.state.pressedElements.length > 0) {
       const keyElement = document.getElementById(
         this.state.pressedElements.pop()
@@ -102,7 +106,7 @@ class Main extends Component {
         clearTimeout(this.state.timeoutObj);
         this.setState({
           timeoutObj: null,
-        });        
+        });
       }
     };
 
@@ -125,16 +129,17 @@ class Main extends Component {
 
     /**
      * Create a right padding when span width exceeds width of its outer container.
-     * @param {HTMLElement} span 
+     * @param {HTMLElement} span
      */
     const createRightPadding = (span) => {
       if (navigator.userAgent.includes("Firefox"))
-        span.style.paddingRight = 
-          getComputedStyle(span.parentElement).paddingRight;
+        span.style.paddingRight = getComputedStyle(
+          span.parentElement
+        ).paddingRight;
     };
-    
+
     /**
-     * Set up a timeout object if the onDisplaySpan width exceeds 
+     * Set up a timeout object if the onDisplaySpan width exceeds
      * @returns true if a timeout object is set. False otherwise.
      */
     const hasSetUpTimeoutObj = () => {
@@ -150,8 +155,7 @@ class Main extends Component {
         });
 
         return true;
-      }
-      else return false;
+      } else return false;
     };
 
     /**
@@ -171,11 +175,11 @@ class Main extends Component {
     const resetSpanInnerHTML = () => {
       spanObjs.displaySpan.innerHTML = "&nbsp;";
       spanObjs.opDisplaySpan.innerHTML = "0";
-    }
+    };
 
     /**
      * Add the provided key in the way specified in callback function.
-     * 
+     *
      * @param {HTMLElement} element The key-receiving span element.
      * @param {String} initialStr A default string inside the element.
      * @param {Function} callback A callback function receiving element and initialStr to decide how to add a key into inner HTML of the element.
@@ -200,11 +204,11 @@ class Main extends Component {
     if (!isNaN(+key) || key === ".") {
       // The key is a number.
 
-      if ((
-            key === "." && 
-            spanObjs.opDisplaySpan.innerHTML.includes(key)
-          ) || this.state.timeoutObj !== null)
-          return;
+      if (
+        (key === "." && spanObjs.opDisplaySpan.innerHTML.includes(key)) ||
+        this.state.timeoutObj !== null
+      )
+        return;
 
       if (this.state.result !== null) {
         resetSpanInnerHTML();
@@ -215,46 +219,47 @@ class Main extends Component {
       }
 
       if (!hasSetUpTimeoutObj()) {
-        const callbackFn = key === "."
-          ? (element, initialStr) => {
-            // If key is a decimal.
-            if (element.innerHTML === initialStr) element.innerHTML = `0${key}`;
-            else if (this.state.operators.includes(element.innerHTML))
-              element.innerHTML =
-                (element.innerHTML === "-" ? "-" : "") + `0${key}`;
-            else if (
-              this.state.operators.includes(
-                element.innerHTML.charAt(element.innerHTML.length - 1)
-              )
-            )
-              element.innerHTML += `0${key}`;
-            else element.innerHTML += key;
-          }
-          : (element, initialStr) => {
-            // If key is not a decimal.
-          const elementStr = element.innerHTML;
-          const lastIdxOfOp = this.state.operators.reduce((id, op) => {
-            id = Math.max(id, elementStr.lastIndexOf(op));
-            return id;
-          }, -1);
+        const callbackFn =
+          key === "."
+            ? (element, initialStr) => {
+                // If key is a decimal.
+                if (element.innerHTML === initialStr)
+                  element.innerHTML = `0${key}`;
+                else if (this.state.operators.includes(element.innerHTML))
+                  element.innerHTML =
+                    (element.innerHTML === "-" ? "-" : "") + `0${key}`;
+                else if (
+                  this.state.operators.includes(
+                    element.innerHTML.charAt(element.innerHTML.length - 1)
+                  )
+                )
+                  element.innerHTML += `0${key}`;
+                else element.innerHTML += key;
+              }
+            : (element, initialStr) => {
+                // If key is not a decimal.
+                const elementStr = element.innerHTML;
+                const lastIdxOfOp = this.state.operators.reduce((id, op) => {
+                  id = Math.max(id, elementStr.lastIndexOf(op));
+                  return id;
+                }, -1);
 
-          if ([initialStr, "0", "+", "*", "/"].includes(elementStr))
-            element.innerHTML = key;
-          else if (
-            elementStr.charAt(elementStr.length - 1) === "0" &&
-            lastIdxOfOp !== -1 &&
-            elementStr.slice(lastIdxOfOp + 1) === "0"
-          ) {
-            // The case that lastly input number is zero and the last number is not a decimal number.
-            element.innerHTML = elementStr.slice(0, -1) + key;
-          } else element.innerHTML += key;
-        };
+                if ([initialStr, "0", "+", "*", "/"].includes(elementStr))
+                  element.innerHTML = key;
+                else if (
+                  elementStr.charAt(elementStr.length - 1) === "0" &&
+                  lastIdxOfOp !== -1 &&
+                  elementStr.slice(lastIdxOfOp + 1) === "0"
+                ) {
+                  // The case that lastly input number is zero and the last number is not a decimal number.
+                  element.innerHTML = elementStr.slice(0, -1) + key;
+                } else element.innerHTML += key;
+              };
 
         validateAndCombine(spanObjs.displaySpan, "&nbsp;", callbackFn);
         validateAndCombine(spanObjs.opDisplaySpan, "", callbackFn);
       }
-    }
-    else if (this.state.operators.includes(key)) {
+    } else if (this.state.operators.includes(key)) {
       if (this.state.result !== null) {
         spanObjs.displaySpan.innerHTML = this.state.result;
 
@@ -299,27 +304,31 @@ class Main extends Component {
           if (!nextLastCharIsOp) spanObjs.displaySpan.innerHTML += key;
         } else {
           spanObjs.displaySpan.innerHTML =
-            spanObjs.displaySpan.innerHTML.slice(0, !nextLastCharIsOp ? -1 : -2) + key;
+            spanObjs.displaySpan.innerHTML.slice(
+              0,
+              !nextLastCharIsOp ? -1 : -2
+            ) + key;
         }
       }
 
       spanObjs.opDisplaySpan.innerHTML = key;
-    }
-    else if (key === "=" || key === "Enter") {
+    } else if (key === "=" || key === "Enter") {
       clearTimeoutObj();
 
       // Calculate the result according to fomula logic.
       const regex = /[\d.](?:[+\-*/])/g;
       let operators = spanObjs.displaySpan.innerHTML.match(regex);
-      let operands = spanObjs.displaySpan.innerHTML.replace(regex, ",").split(",");
+      let operands = spanObjs.displaySpan.innerHTML
+        .replace(regex, ",")
+        .split(",");
 
       if (operators) {
         operands = operands.map((op, id) => {
           if (operators && id < operators.length)
-            return (op + operators[id].slice(0, -1));
+            return op + operators[id].slice(0, -1);
           else return op;
         });
-        operators = operators.map(op => op.slice(1));
+        operators = operators.map((op) => op.slice(1));
       }
       // console.log(operators, operands);
       // return;
@@ -327,22 +336,16 @@ class Main extends Component {
       let value;
 
       try {
-        let lastOperand = operands[operands.length-1];
+        let lastOperand = operands[operands.length - 1];
 
-        if (
-            lastOperand === "" || 
-            lastOperand === "-"
-        ) {
+        if (lastOperand === "" || lastOperand === "-") {
           throw new Error("ERROR,FORMULA");
-        }
-        else if (lastOperand.slice(-1) === ".") {
+        } else if (lastOperand.slice(-1) === ".") {
           throw new Error("ERROR,LAST OPERAND");
-        }
-        else if (!operators) {
+        } else if (!operators) {
           if (operands[0] === "-0") operands[0] = "0";
           value = +operands[0] || 0;
-        }
-        else {
+        } else {
           const calculateValue = (operators, operands) => {
             const stack = [+operands.shift()];
 
@@ -352,12 +355,10 @@ class Main extends Component {
 
               if (operator === "+" || operator === "-") {
                 stack.push(operator, operand);
-              }
-              else {
+              } else {
                 if (operator === "*") {
                   stack.push(stack.pop() * operand);
-                }
-                else {
+                } else {
                   if ([0, -0].includes(operand))
                     throw new Error("ERROR,DIV BY 0");
                   stack.push(stack.pop() / operand);
@@ -371,8 +372,7 @@ class Main extends Component {
 
               if (operator === "+") {
                 stack.push(stack.pop() + operandTwo);
-              }
-              else {
+              } else {
                 stack.push(stack.pop() - operandTwo);
               }
             }
@@ -382,10 +382,9 @@ class Main extends Component {
 
           value = calculateValue(operators, operands);
         }
-      }
-      catch (err) {
-        [spanObjs.displaySpan.innerHTML,
-        spanObjs.opDisplaySpan.innerHTML] = err.message.split(",");
+      } catch (err) {
+        [spanObjs.displaySpan.innerHTML, spanObjs.opDisplaySpan.innerHTML] =
+          err.message.split(",");
 
         spanObjs.displaySpan.parentElement.style.textAlign = "left";
         spanObjs.opDisplaySpan.parentElement.style.textAlign = "left";
@@ -406,8 +405,51 @@ class Main extends Component {
       this.setState({
         result: value,
       });
-    }
-    else {
+    } else if (key === "DEL" || key === "Backspace") {
+      spanObjs.displaySpan.innerHTML = spanObjs.displaySpan.innerHTML.slice(
+        0,
+        -1
+      );
+      spanObjs.opDisplaySpan.innerHTML = spanObjs.opDisplaySpan.innerHTML.slice(
+        0,
+        -1
+      );
+
+      if (spanObjs.displaySpan.innerHTML.length < 1) {
+        spanObjs.displaySpan.innerHTML = "";
+      }
+
+      if (spanObjs.opDisplaySpan.innerHTML.length < 1) {
+        if (spanObjs.displaySpan.innerHTML.length > 0) {
+          const regex = /[\d.](?:[+\-*/])/g;
+          let operators = spanObjs.displaySpan.innerHTML.match(regex);
+          let operands = spanObjs.displaySpan.innerHTML
+            .replace(regex, ",")
+            .split(",");
+
+          if (operators) {
+            operands = operands.map((op, id) => {
+              if (operators && id < operators.length)
+                return op + operators[id].slice(0, -1);
+              else return op;
+            });
+            operators = operators.map((op) => op.slice(1));
+          }
+
+          if (operands[operands.length - 1] === "") {
+            spanObjs.opDisplaySpan.innerHTML = operators[operators.length - 1];
+          } else {
+            spanObjs.opDisplaySpan.innerHTML = operands[operands.length - 1];
+          }
+        } else {
+          spanObjs.opDisplaySpan.innerHTML = "0";
+        }
+      }
+
+      if (!isExceed(spanObjs.displaySpan)) {
+        resetSpanRelatedStyling();
+      }
+    } else {
       clearTimeoutObj();
       resetSpanInnerHTML();
       resetSpanRelatedStyling();
@@ -419,7 +461,9 @@ class Main extends Component {
 
     if (isExceed(spanObjs.displaySpan)) {
       createRightPadding(spanObjs.displaySpan);
-      spanObjs.displaySpan.parentElement.scroll({ left: spanObjs.displaySpan.clientWidth });
+      spanObjs.displaySpan.parentElement.scroll({
+        left: spanObjs.displaySpan.clientWidth,
+      });
     }
   }
 

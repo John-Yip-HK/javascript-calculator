@@ -1,17 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap");
 @font-face {
   font-family: "Digital-7";
-  src: url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.eot');
-  src: url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.eot')
-      format('embedded-opentype'),
-    url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.woff2')
-      format('woff2'),
-    url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.woff')
-      format('woff'),
-    url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.ttf')
-      format('truetype'),
-    url('fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.svg')
-      format('svg');
+  src: url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.eot");
+  src: url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.eot")
+      format("embedded-opentype"),
+    url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.woff2")
+      format("woff2"),
+    url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.woff")
+      format("woff"),
+    url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.ttf")
+      format("truetype"),
+    url("fonts/Digital-7 V7/@font-face/58045dabdc3a361cb9bb9faf2f1dd1f3.svg")
+      format("svg");
 }
 @import "~bootstrap/scss/functions";
 @import "~bootstrap/scss/variables";
@@ -151,8 +151,15 @@ body {
         color: $black;
       }
 
-      #clear {
+      #clear,
+      #backspace {
         background-color: $red-500;
+      }
+
+      #backspace {
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       #equals {
