@@ -79,6 +79,10 @@ body {
       overflow-x: scroll;
     }
 
+    #display {
+      white-space: nowrap;
+    }
+
     span {
       display: inline-block;
     }
