@@ -5,7 +5,7 @@ export default function Display() {
   return (
     <Row className="row-container" id="display-container">
       <Col id="display">
-        <span id="display-text">&nbsp;</span>
+        <span id="display-text"></span>
       </Col>
       <hr />
       <Col id="op-display">
