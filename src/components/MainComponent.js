@@ -161,6 +161,30 @@ class Main extends Component {
       }
     };
 
+    const decodeMathFormula = (formulaStr = spanObjs.displaySpan.innerHTML) => {
+      formulaStr = formulaStr.replace("--", "+");
+
+      const regex = /[\d.](?:[+\-*/])/g;
+      let operators = formulaStr.match(regex);
+      let operands = formulaStr.replace(regex, ",").split(",");
+
+      if (operators) {
+        operands = operands.map((op, id) => {
+          if (operators && id < operators.length)
+            return op + operators[id].slice(0, -1);
+          else return op;
+        });
+        operators = operators.map((op) => op.slice(1));
+      }
+
+      return {
+        operators: operators,
+        operands: operands,
+      };
+    };
+
+    // End of helper functions.
+
     // Reset right padding for both spans if result is not null.
     if (this.state.result !== null) {
       resetSpanRelatedStyling();
@@ -191,10 +215,16 @@ class Main extends Component {
         spanObjs,
         clearTimeoutObj,
         isExceed,
-        createRightPadding
+        createRightPadding,
+        decodeMathFormula
       );
     } else if (key === "DEL" || key === "Backspace") {
-      this.backspace(spanObjs, isExceed, resetSpanRelatedStyling);
+      this.backspace(
+        spanObjs,
+        isExceed,
+        resetSpanRelatedStyling,
+        decodeMathFormula
+      );
     } else {
       this.resetCalculator(
         clearTimeoutObj,
@@ -365,7 +395,7 @@ class Main extends Component {
     spanObjs.opDisplaySpan.innerHTML = key;
   }
 
-  backspace(spanObjs, isExceed, resetSpanRelatedStyling) {
+  backspace(spanObjs, isExceed, resetSpanRelatedStyling, decodeMathFormula) {
     spanObjs.displaySpan.innerHTML = spanObjs.displaySpan.innerHTML.slice(
       0,
       -1
@@ -381,20 +411,7 @@ class Main extends Component {
 
     if (spanObjs.opDisplaySpan.innerHTML.length < 1) {
       if (spanObjs.displaySpan.innerHTML.length > 0) {
-        const regex = /[\d.](?:[+\-*/])/g;
-        let operators = spanObjs.displaySpan.innerHTML.match(regex);
-        let operands = spanObjs.displaySpan.innerHTML
-          .replace(regex, ",")
-          .split(",");
-
-        if (operators) {
-          operands = operands.map((op, id) => {
-            if (operators && id < operators.length)
-              return op + operators[id].slice(0, -1);
-            else return op;
-          });
-          operators = operators.map((op) => op.slice(1));
-        }
+        let { operators, operands } = decodeMathFormula();
 
         if (operands[operands.length - 1] === "") {
           spanObjs.opDisplaySpan.innerHTML = operators[operators.length - 1];
@@ -411,23 +428,17 @@ class Main extends Component {
     }
   }
 
-  calculateResult(spanObjs, clearTimeoutObj, isExceed, createRightPadding) {
+  calculateResult(
+    spanObjs,
+    clearTimeoutObj,
+    isExceed,
+    createRightPadding,
+    decodeMathFormula
+  ) {
     clearTimeoutObj();
 
     // Calculate the result according to fomula logic.
-    const regex = /[\d.](?:[+\-*/])/g;
-    let formulaStr = spanObjs.displaySpan.innerHTML.replace("--", "+");
-    let operators = formulaStr.match(regex);
-    let operands = formulaStr.replace(regex, ",").split(",");
-
-    if (operators) {
-      operands = operands.map((op, id) => {
-        if (operators && id < operators.length)
-          return op + operators[id].slice(0, -1);
-        else return op;
-      });
-      operators = operators.map((op) => op.slice(1));
-    }
+    let { operators, operands } = decodeMathFormula();
 
     // console.log(operators, operands);
     // return;
