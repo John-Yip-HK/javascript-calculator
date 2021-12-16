@@ -176,7 +176,7 @@ body {
     }
   }
 
-  #keypad > [class*="row"]:first-of-type {
+  #keypad-container > [class*="row"]:first-of-type {
     [class*="col"]:first-child {
       border-top-left-radius: $keypad-border-inner-radius;
     }
@@ -186,7 +186,7 @@ body {
     }
   }
 
-  #keypad > [class*="row"]:last-of-type > [class*="col"]:last-child {
+  #keypad-container > [class*="row"]:last-of-type > [class*="col"]:last-child {
     border-bottom-right-radius: $keypad-border-inner-radius;
   }
 }
