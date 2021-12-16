@@ -7,13 +7,19 @@ export default function Keypad(props) {
     props.updateDisplay(event.target.innerHTML);
 
   return (
-    <Row className="row-container" id="keypad-container">
-      <Container id="keypad">
+    <Row className="row-container">
+      <Container id="keypad-container">
         <Row>
-          <Col id="clear" className="clickable" onClick={keyPressCallback}>
+          <Col
+            xs={3}
+            id="clear"
+            className="clickable"
+            onClick={keyPressCallback}
+          >
             AC
           </Col>
           <Col
+            xs={3}
             id="divide"
             className="operand clickable"
             onClick={keyPressCallback}
@@ -21,6 +27,7 @@ export default function Keypad(props) {
             /
           </Col>
           <Col
+            xs={3}
             id="multiply"
             className="operand clickable"
             onClick={keyPressCallback}

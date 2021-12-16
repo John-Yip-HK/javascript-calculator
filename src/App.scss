@@ -17,6 +17,9 @@
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
 
+$container-border-radius: 0.3rem;
+$keypad-border-inner-radius: 0.2rem;
+
 @mixin testBorder($border-radius: 0.5rem) {
   border: 1px solid white;
   border-radius: $border-radius;
@@ -41,12 +44,30 @@
 body {
   font-family: "Roboto Mono", monospace;
   font-size: 28px;
+
+  background-color: $gray-300;
+  overflow: hidden;
+
+  /* 
+  Stop highlighting text in keypad.
+  
+  Credit: https://stackoverflow.com/questions/7018324/how-to-stop-highlighting-of-a-div-element-when-double-clicking */
+
+  /* If you want to implement it in very old browser-versions */
+  -webkit-user-select: none; /* Chrome/Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+ */
+
+  /* The rule below is not implemented in browsers yet */
+  -o-user-select: none;
+
+  /* The rule below is implemented in most browsers by now */
+  user-select: none;
 }
 
 #outer-container {
   display: flex;
   height: 100vh;
-  background-color: $gray-300;
   max-width: 100%;
 }
 
@@ -63,12 +84,9 @@ body {
     @include testMargin(1.5rem, 0);
   }
 
-  #display-container,
-  #keypad div[class*="col"] {
-    @include testBorder(0.3rem);
-  }
-
   #display-container {
+    @include testBorder($container-border-radius);
+
     font-family: "Digital-7", monospace;
     font-size: 36px;
     text-align: right;
@@ -92,86 +110,83 @@ body {
     }
   }
 
-  #keypad {
+  #keypad-container {
+    @include testBorder($container-border-radius);
+
     width: 100%;
 
-    div {
-      /* Credit: https://stackoverflow.com/questions/7018324/how-to-stop-highlighting-of-a-div-element-when-double-clicking */
-      /* If you want to implement it in very old browser-versions */
-      -webkit-user-select: none; /* Chrome/Safari */
-      -moz-user-select: none; /* Firefox */
-      -ms-user-select: none; /* IE10+ */
+    [class*="col"] {
+      @include testBorder(0);
+      background-color: $gray-800;
+      text-align: center;
 
-      /* The rule below is not implemented in browsers yet */
-      -o-user-select: none;
+      &.clickable {
+        &:hover {
+          @include addSemiTransparentLayer();
 
-      /* The rule below is implemented in most browsers by now */
-      user-select: none;
-
-      [class*="col"] {
-        @include testMargin(0.1rem, 0.1rem);
-        background-color: $gray-800;
-        text-align: center;
-
-        &:first-of-type {
-          margin-left: 0;
-        }
-
-        &:last-of-type {
-          margin-right: 0;
-        }
-
-        &.clickable {
-          &:hover {
-            @include addSemiTransparentLayer();
-
-            &.operand {
-              @include addSemiTransparentLayer($color: $black);
-            }
-          }
-
-          &:active,
-          &.keyActive {
-            @include addSemiTransparentLayer($opacity: 0.3);
-
-            &.operand {
-              @include addSemiTransparentLayer($black, 0.3);
-            }
+          &.operand {
+            @include addSemiTransparentLayer($color: $black);
           }
         }
-      }
 
-      .no-border {
-        border: 0;
-      }
+        &:active,
+        &.keyActive {
+          @include addSemiTransparentLayer($opacity: 0.3);
 
-      .nested-row {
-        @include testMargin(0, 0.1rem);
-        background-color: transparent;
-      }
-
-      .operand {
-        background-color: $gray-300;
-        color: $black;
-      }
-
-      #clear,
-      #backspace {
-        background-color: $red-500;
-      }
-
-      #backspace {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      #equals {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: $blue-700;
+          &.operand {
+            @include addSemiTransparentLayer($black, 0.3);
+          }
+        }
       }
     }
+
+    .no-border {
+      border: 0;
+    }
+
+    .nested-row {
+      background-color: transparent;
+
+      & > [class*="row"]:last-child > [class*="col"]:first-child {
+        border-bottom-left-radius: $keypad-border-inner-radius;
+      }
+    }
+
+    .operand {
+      background-color: $gray-500;
+      color: $black;
+    }
+
+    #clear,
+    #backspace {
+      background-color: $red-500;
+    }
+
+    #backspace {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #equals {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: $blue-700;
+    }
+  }
+
+  #keypad > [class*="row"]:first-of-type {
+    [class*="col"]:first-child {
+      border-top-left-radius: $keypad-border-inner-radius;
+    }
+
+    [class*="col"]:last-child {
+      border-top-right-radius: $keypad-border-inner-radius;
+    }
+  }
+
+  #keypad > [class*="row"]:last-of-type > [class*="col"]:last-child {
+    border-bottom-right-radius: $keypad-border-inner-radius;
   }
 }
